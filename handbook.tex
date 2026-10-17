@@ -66,8 +66,8 @@
 
 % ============ TRANG BIA + MUC LUC ============
 \begin{center}
-{\Large\bfseries SỔ TAY ICPC — BẢN 13 TRANG KHỔ NGANG}\\[2pt]
-{\small Phong cách code: \texttt{\#include<bits/stdc++.h>}, \texttt{using namespace std}, \texttt{long long}, \texttt{fast IO} \quad|\quad C++17 \quad|\quad Tiếng Việt \quad|\quad Bổ sung: đồ thị nâng cao, cây, DP, hình học, xác suất}
+{\Large\bfseries SỔ TAY ICPC — BẢN 15 TRANG KHỔ NGANG}\\[2pt]
+{\small Phong cách code: \texttt{\#include<bits/stdc++.h>}, \texttt{using namespace std}, \texttt{long long}, \texttt{fast IO} \quad|\quad C++17 \quad|\quad Tiếng Việt \quad|\quad Bổ sung: đồ thị nâng cao, cây, DP, hình học, xác suất, ma trận, XOR \& tiện ích}
 \end{center}
 \vspace{-2pt}
 \tableofcontents
@@ -774,6 +774,25 @@ struct HopcroftKarp{
 };
 \end{lstlisting}
 
+\subsection{König: vertex cover \& independent set (bipartite)}
+Trên đồ thị hai phía: $|\text{matching}_{\max}| = |\text{vertex cover}_{\min}|$ và $|\text{independent set}_{\max}| = |V| - |\text{cover}|$. Tìm cover: BFS đường tăng từ các đỉnh trái chưa ghép (đi cạnh \emph{chưa} ghép sang phải, cạnh \emph{đã} ghép về trái).
+\begin{lstlisting}
+// matchL[u], matchR[v] chinh la pu/pv cua Hopcroft--Karp o tren
+// nL/nR = so dinh trai/phai, adj[u] = ke ben phai cua u
+vector<char> zL(nL+1,0),zR(nR+1,0); queue<int> q;
+for(int u=1;u<=nL;u++) if(matchL[u]==-1){ zL[u]=1; q.push(u); }
+while(!q.empty()){ int u=q.front(); q.pop();
+  for(int v:adj[u]){
+    if(v==matchL[u]||zR[v]) continue;         // bo qua canh da ghep
+    zR[v]=1;
+    int w=matchR[v];
+    if(w!=-1&&!zL[w]){ zL[w]=1; q.push(w); }  // ve theo canh da ghep
+  }
+}
+// cover nho nhat = { u | !zL[u] } hop { v | zR[v] }
+// independent set lon nhat = phan bu cua cover
+\end{lstlisting}
+
 \subsection{Min-Cost Max-Flow (potentials + Dijkstra)}
 Dùng cho gán chi phí min, vận chuyển. $n\le 500$.
 \begin{lstlisting}
@@ -881,8 +900,8 @@ ll exgcd(ll a,ll b,ll &x,ll &y){
 \end{lstlisting}
 
 % =====================================================
-\section{Đồ thị bổ sung: cầu--khớp, SCC, Euler}
-Ba dạng chuẩn ICPC mà bản đầu chưa có: cầu/khớp $O(n+m)$, thành phần liên thông mạnh, đường đi Euler.
+\section{Đồ thị bổ sung: cầu--khớp, SCC, Euler, BCC, 2-SAT}
+Năm dạng chuẩn ICPC mà bản đầu chưa có: cầu/khớp $O(n+m)$, thành phần liên thông mạnh, đường đi Euler, BCC cạnh, 2-SAT.
 
 \subsection{Cầu (bridge) và khớp (articulation point)}
 DFS một lần: \texttt{num[u]} = thứ tự thăm, \texttt{low[u]} = num nhỏ nhất vươn tới được từ cây con $u$. Cạnh $(u,v)$ trên cây DFS là cầu khi \texttt{low[v] > num[u]}; $u$ khác gốc là khớp khi \texttt{low[v] >= num[u]}. Gốc là khớp khi có $\ge 2$ con.
@@ -940,6 +959,45 @@ void dfs_euler(int u){
   }
 }
 // goi tu dinh bac le (neu co); reverse(path) de in dung thu tu
+\end{lstlisting}
+
+\subsection{BCC cạnh (thành phần 2-cạnh-liên thông)}
+Xóa hết cầu: mỗi thành phần liên thông còn lại là một BCC. Nén BCC lại thành cây (cạnh = các cầu) để dùng kỹ thuật trên cây.
+\begin{lstlisting}
+// br = set cac cau (min,max) tu code cau o muc tren
+vector<int> bcc(n+1,-1); int cc=0;
+for(int s=1;s<=n;s++) if(bcc[s]==-1){
+  queue<int> q; q.push(s); bcc[s]=cc;
+  while(!q.empty()){ int u=q.front(); q.pop();
+    for(int v:g[u]){
+      int a=min(u,v),b=max(u,v);
+      if(bcc[v]==-1&&!br.count({a,b})){ bcc[v]=cc; q.push(v); }
+    }
+  }
+  cc++;
+}
+// canh song song: danh dau cau theo so hieu canh (xem ghi chu muc cau)
+\end{lstlisting}
+
+\subsection{2-SAT (dựa trên SCC)}
+Mỗi biến 2 nút: \texttt{2i} = ``$x_i$ sai'', \texttt{2i+1} = ``$x_i$ đúng''. Mệnh đề $(x_i{=}f)\lor(x_j{=}h)$ thêm hai cạnh kéo theo $\lnot f\to h$ và $\lnot h\to f$. Thỏa được khi không biến nào có hai nút cùng SCC; Kosaraju đánh số \texttt{comp} theo topo nên gán $x_i{=}\text{true} \iff \texttt{comp[2i+1]} > \texttt{comp[2i]}$.
+\begin{lstlisting}
+int N; vector<vector<int>> gg,gr; vector<int> vis,comp,ord;
+void imp(int a,int b){ gg[a].pb(b); gr[b].pb(a); } // a -> b
+void clause(int i,bool f,int j,bool h){             // (x_i=f) OR (x_j=h)
+  imp(2*i+!f,2*j+h); imp(2*j+!h,2*i+f);
+}
+void d1(int u){ vis[u]=1; for(int v:gg[u]) if(!vis[v]) d1(v); ord.pb(u); }
+void d2(int u,int c){ comp[u]=c; for(int v:gr[u]) if(comp[v]<0) d2(v,c); }
+bool twoSAT(){ // gg/gr size 2N, da them het menh de bang clause
+  vis.assign(2*N,0); comp.assign(2*N,-1); ord.clear();
+  for(int u=0;u<2*N;u++) if(!vis[u]) d1(u);
+  reverse(ord.begin(),ord.end());
+  int c=0; for(int u:ord) if(comp[u]<0) d2(u,c++);
+  for(int i=0;i<N;i++) if(comp[2*i]==comp[2*i+1]) return false;
+  return true;
+}
+// CSES 1684 Giant Pizza, CF 776D, 228E
 \end{lstlisting}
 
 % =====================================================
@@ -1431,6 +1489,112 @@ for(int pos=0;pos<n*m;pos++){
   swap(dp,ndp);
 }
 // dap an: dp[0]
+\end{lstlisting}
+
+% =====================================================
+\section{Nhân ma trận \& lũy thừa nhanh}
+Nhân hai ma trận $k\times k$ tốn $O(k^3)$; lũy thừa bậc $e$ tốn $O(k^3\log e)$. Dùng cho: Fibonacci số hạng lớn, đếm đường đi đúng $k$ cạnh, mọi hệ truy hồi tuyến tính.
+\begin{lstlisting}
+const int MOD=1000000007;
+struct Mat{
+  int n; ll a[105][105];
+  Mat(int n=0):n(n){ memset(a,0,sizeof a); }
+};
+Mat mul(const Mat& A,const Mat& B){
+  int n=A.n; Mat C(n);
+  for(int i=0;i<n;i++)
+    for(int k=0;k<n;k++) if(A.a[i][k])
+      for(int j=0;j<n;j++)
+        C.a[i][j]=(C.a[i][j]+A.a[i][k]*B.a[k][j])%MOD;
+  return C;
+}
+Mat pw(Mat A,ll e){
+  int n=A.n; Mat R(n);
+  for(int i=0;i<n;i++) R.a[i][i]=1; // ma tran don vi
+  while(e){ if(e&1) R=mul(R,A); A=mul(A,A); e>>=1; }
+  return R;
+}
+// Fibonacci (CSES 1722): A=[[1,1],[1,0]]; f(n)=pw(A,n).a[0][1]
+// Dem duong di dung k canh (CSES 1723): pw(A_ke,k).a[1][n]
+// CSES 1724: nhan thay bang cong, cong thay bang min,
+//   R khoi tao duong cheo 0 / con lai INF
+\end{lstlisting}
+
+% =====================================================
+\section{XOR basis (linear basis)}
+Giữ cơ sở của không gian các giá trị XOR: tập con XOR ra giá trị nào thì từ bộ cơ sở cũng ra được giá trị đó. Mỗi thao tác $O(60)$.
+\begin{lstlisting}
+ll bs[61];
+bool add(ll x){ // true neu x doc lap tuyen tinh voi co so cu
+  for(int b=60;b>=0;b--) if(x>>b&1){
+    if(!bs[b]){ bs[b]=x; return true; }
+    x^=bs[b];
+  }
+  return false;
+}
+ll maxXor(){ // XOR lon nhat cua mot tap con
+  ll r=0;
+  for(int b=60;b>=0;b--) r=max(r,r^bs[b]);
+  return r;
+}
+bool can(ll x){ // x co tao duoc tu cac so da add khong
+  for(int b=60;b>=0;b--) if(x>>b&1){
+    if(!bs[b]) return false;
+    x^=bs[b];
+  }
+  return true;
+}
+// So gia tri XOR phan biet = 2^(so lan add tra ve true)
+// CSES 3191 Maximum Xor Subset, 3211 Number of Subset Xors
+\end{lstlisting}
+
+% =====================================================
+\section{Topo sort (Kahn) \& DP trên DAG}
+Sắp thứ tự đỉnh sao cho mọi cạnh $u\to v$ đều có $u$ đứng trước $v$. Kahn = BFS trên các đỉnh bậc vào 0; duyệt không hết $n$ đỉnh nghĩa là có chu trình.
+\begin{lstlisting}
+vector<int> topo(){ // n, g[][], indeg[] la bien chung
+  queue<int> q; vector<int> ord;
+  for(int i=1;i<=n;i++) if(!indeg[i]) q.push(i);
+  while(!q.empty()){
+    int u=q.front(); q.pop(); ord.pb(u);
+    for(int v:g[u]) if(--indeg[v]==0) q.push(v);
+  }
+  if((int)ord.size()<n) return {}; // co chu trinh
+  return ord;
+}
+// Thu tu tu dien nho nhat: doi queue thanh
+//   priority_queue<int,vector<int>,greater<int>>
+// DP tren DAG, duyet theo ord:
+//   duong di dai nhat: dp[v]=max(dp[v],dp[u]+1)
+//   dem duong di: dp[v]=(dp[v]+dp[u])%MOD, khoi tao dp[1]=1
+// CSES 1679 Course Schedule, 1680 Longest Flight Route, 1681 Game Routes
+\end{lstlisting}
+
+% =====================================================
+\section{Mẹo STL \& bit ops}
+\begin{lstlisting}
+__builtin_popcount(x)  // so bit 1 (them ll: __builtin_popcountll)
+__builtin_ctz(x)       // so bit 0 tan cung = vi tri bit 1 thap nhat (x>0)
+63-__builtin_clzll(x)  // floor(log2(x)) cho ll, x>0 (= __lg(x) voi int)
+nth_element(a,a+k,a+n);// a[k]=phan tu nho thu k (0-index), O(n) trung binh
+next_permutation(a,a+n);  // hoan vi ke tiep, het thi tra ve false
+rotate(a,a+k,a+n);     // xoay trai k vi tri
+iota(a,a+n,1);         // a = 1,2,...,n
+// Custom hash chong hack unordered_map:
+struct chash{
+  static uint64_t sm(uint64_t x){
+    x+=0x9e3779b97f4a7c15ULL;
+    x=(x^(x>>30))*0xbf58476d1ce4e5b9ULL;
+    x=(x^(x>>27))*0x94d049bb133111ebULL;
+    return x^(x>>31);
+  }
+  size_t operator()(uint64_t x) const{
+    static const uint64_t F=chrono::steady_clock::now().time_since_epoch().count();
+    return sm(x+F);
+  }
+};
+unordered_map<ll,int,chash> mp;
+// mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
 \end{lstlisting}
 
 \end{multicols}
