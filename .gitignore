@@ -1,0 +1,29 @@
+## LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.out
+*.synctex.gz
+*.toc
+
+## Compiled output
+*.dvi
+*.ps
+
+## Sync / editor files
+*.synctex(busy)
+*~
+\#*\#
+.DS_Store
+
+## Tools
+.vscode/
+.idea/
