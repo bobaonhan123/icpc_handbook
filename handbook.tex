@@ -66,8 +66,8 @@
 
 % ============ TRANG BIA + MUC LUC ============
 \begin{center}
-{\Large\bfseries SỔ TAY ICPC — BẢN 18 TRANG KHỔ NGANG}\\[2pt]
-{\small Phong cách code: \texttt{\#include<bits/stdc++.h>}, \texttt{using namespace std}, \texttt{long long}, \texttt{fast IO} \quad|\quad C++17 \quad|\quad Tiếng Việt \quad|\quad Tổng hợp cấu trúc dữ liệu và thuật toán trọng tâm}
+{\Large\bfseries SỔ TAY ICPC — BẢN 13 TRANG KHỔ NGANG}\\[2pt]
+{\small Phong cách code: \texttt{\#include<bits/stdc++.h>}, \texttt{using namespace std}, \texttt{long long}, \texttt{fast IO} \quad|\quad C++17 \quad|\quad Tiếng Việt \quad|\quad Bổ sung: đồ thị nâng cao, cây, DP, hình học, xác suất}
 \end{center}
 \vspace{-2pt}
 \tableofcontents
@@ -158,6 +158,22 @@ vector<ll> dijkstra(vector<vector<pair<int,ll>>>& adj,int s){
 
 \subsection{BFS đa nguồn}
 Đẩy mọi nguồn vào queue với \texttt{dist=0}. Dùng cho: lan truyền lửa/lây nhiễm, khoảng cách tới ô đặc biệt gần nhất, Voronoi trên lưới.
+\begin{lstlisting}
+// Monsters (1194): nhieu quai M va nguoi A tren luoi, thoat ra bien.
+// B1: BFS da nguon tu moi M -> dm[][]. B2: BFS tu A, chi buoc vao o
+// khi den som hon quai (den cung luc la thua). Cham bien -> thoat duoc.
+int dm[N][N], ds[N][N]; // -1 = chua tham
+queue<pair<int,int>> q;
+for i,j: if(a[i][j]=='M'){ dm[i][j]=0; q.push({i,j}); }
+while(!q.empty()){
+  auto [x,y]=q.front(); q.pop();
+  for(int k=0;k<4;k++){ int nx=x+dx[k],ny=y+dy[k];
+    if(nx<0||ny<0||nx>=n||ny>=m||a[nx][ny]=='#'||dm[nx][ny]!=-1) continue;
+    dm[nx][ny]=dm[x][y]+1; q.push({nx,ny});
+  }
+}
+// B2 tuong tu, them dieu kien ds[x][y]+1 < dm[nx][ny] moi duoc vao o
+\end{lstlisting}
 
 \subsection{DSU + Kruskal (khó ở nén + rollback tư duy)}
 \begin{lstlisting}
@@ -462,9 +478,9 @@ vector<int> zFunc(const string& s){
 \end{lstlisting}
 
 \subsection{Rolling Hash kép}
-Khi KMP/Z không đủ (so sánh chuỗi con bất kỳ, palindrome). Dùng 2 mod.
+Khi KMP/Z không đủ (so sánh chuỗi con bất kỳ, palindrome). Dùng 2 mod. Base nên là số lẻ lớn hơn 26 (có thể random); tránh base chẵn.
 \begin{lstlisting}
-const int HMOD1=1000000007,HMOD2=1000000009,HBASE=9113823%100000+7;
+const int HMOD1=1000000007,HMOD2=1000000009,HBASE=911382323;
 struct HashStr{
   string s; vector<ll> p1,p2,h1,h2;
   HashStr(const string& str=""){init(str);}
@@ -497,6 +513,40 @@ pair<vector<int>,vector<int>> manacher(const string& s){
 \end{lstlisting}
 
 % =====================================================
+\section{Đệ quy có nhớ (memoization)}
+Viết DP theo hướng đệ quy từ trạng thái lớn lùi về trạng thái cơ sở, mỗi trạng thái chỉ tính một lần. Hợp với bài có thứ tự tính tự nhiên (digit DP, game, đếm đường đi) mà không muốn tự sắp thứ tự vòng lặp.
+\begin{lstlisting}
+// Khung chuan
+vector<ll> memo; vector<int> vis; // memo.assign(n,-1) neu gia tri khong the am
+ll dp(trang thai){
+  if(dieu kien dung) return base;
+  if(vis[id]) return memo[id];
+  ll res=0;
+  // ... chuyen trang thai, cong don vao res
+  vis[id]=1; memo[id]=res;
+  return res;
+}
+\end{lstlisting}
+Bốn lưu ý hay gặp:
+(1) Chỉ nhớ trạng thái mà kết quả không phụ thuộc ``đường tới''. Ví dụ \texttt{tight} của digit DP phải nằm ngoài memo; \texttt{started} thì nhớ được vì nó là một phần trạng thái.
+(2) Nếu giá trị hợp lệ có thể là $-1$ thì dùng mảng \texttt{vis} riêng, đừng lấy \texttt{-1} làm dấu ``chưa tính''.
+(3) Nhiều chiều thì encode thành một số hoặc dùng \texttt{map/unordered\_map} khi trạng thái thưa.
+(4) Đệ quy sâu (cỡ $10^6$) dễ tràn stack --- chuyển sang vòng lặp hoặc chạy trên môi trường stack lớn.
+
+Ví dụ nhỏ --- đếm cách phân tích $n$ thành tổng các số nguyên dương không tăng (dạng ``phân tích số''):
+\begin{lstlisting}
+ll memo[1005][1005]; // fill -1 truoc
+ll part(int n,int mx){ // phan tich n, cac phan <= mx
+  if(n==0) return 1;
+  if(memo[n][mx]!=-1) return memo[n][mx];
+  ll r=0;
+  for(int x=1;x<=min(n,mx);x++) r+=part(n-x,x);
+  return memo[n][mx]=r;
+}
+// goi part(n,n)
+\end{lstlisting}
+
+% =====================================================
 \section{DP chữ số (Digit DP)}
 Trạng thái gồm \texttt{pos, tight, started/leadingZero, sum/mod}. Đệ quy có memo khi \texttt{tight=0}.
 \begin{lstlisting}
@@ -518,15 +568,85 @@ ll dfs(int pos,int sum,bool tight,bool started,int target){
 \end{lstlisting}
 Cách gọi: \texttt{S=to\_string(R); memset(vis,0,sizeof vis); ans=dfs(0,0,true,false,target)}. Đếm đoạn $[L,R]$: \texttt{F(R)-F(L-1)}.
 
-Ví dụ đếm số không chứa chữ số 4 và không chứa chuỗi 13:
+Ví dụ đếm số không chứa chữ số 4 và không chứa chuỗi 13 (bản đầy đủ):
 \begin{lstlisting}
-ll dp2[20][2][2][2]; bool v2[20][2][2][2]; string T;
-ll dfs2(int p,bool t,bool started,bool hasBad,int prevHas1){
-  // don gian hoa: truyen prev la co phai so truoc la 1 khong
-  if(p==(int)T.size()) return (!started||!hasBad)?1:0; // tuy de
-  // ... lap d nhu tren, hasBad |= (d==4)||(prevHas1&&d==3&&started);
-  return 0; // viet day du khi thi
+string S; ll memo2[20][2]; bool vis2[20][2];
+// prev1 = chu so ngay truoc co phai la 1 (de chan "13")
+ll dfs2(int pos,bool tight,bool prev1){
+  if(pos==(int)S.size()) return 1;
+  if(!tight&&vis2[pos][prev1]) return memo2[pos][prev1];
+  int lim=tight?S[pos]-'0':9; ll res=0;
+  for(int d=0;d<=lim;d++){
+    if(d==4) continue;        // khong chua 4
+    if(prev1&&d==3) continue; // khong chua "13"
+    res+=dfs2(pos+1,tight&&d==lim,d==1);
+  }
+  if(!tight){vis2[pos][prev1]=true; memo2[pos][prev1]=res;}
+  return res;
 }
+// S=to_string(R); memset(vis2,0,sizeof vis2); dfs2(0,true,false)
+// [L,R]: F(R)-F(L-1). (Mau tren khong dinh leading zero;
+// neu dieu kien dinh so 0 thi can co co "started" nhu ham dfs o tren.)
+\end{lstlisting}
+
+\subsection{Kiểu (đếm, tổng) --- hỏi TỔNG chữ số / tổng giá trị}
+Bài ``tính tổng chữ số của mọi số thỏa điều kiện'': trạng thái trả về cặp (số lượng, tổng chữ số). Khi gắn thêm chữ số $d$ vào mỗi số của nhánh con: \texttt{tong += tong\_con + d * dem\_con}. Nếu hỏi tổng giá trị của các số (không phải tổng chữ số): \texttt{tong += tong\_con + d * 10\^{}p * dem\_con}, với $p$ = số chữ số còn lại phía sau.
+
+\subsection{Ví dụ đầy đủ: tổng chữ số các số $\le n$ và chia hết cho $k$}
+Trạng thái \texttt{(pos, rem mod k, tight, started)}, trả về cặp (đếm, tổng chữ số). Với $k$ nhỏ thì nhớ theo $O(k)$; với $k$ lớn số bội số $\le n$ lại ít --- chia hai nhánh theo ngưỡng. Chạy được $n\le 10^{12}$ với mọi $k\le n$.
+\begin{lstlisting}
+const int LIM=100000; // k<=LIM: digit DP; k>LIM: duyet boi so
+string S; int K,L;
+ll mCnt[15][100005][2],mSum[15][100005][2];
+bool vis[15][100005][2];
+
+ll sumDigit(ll x){ ll s=0; while(x){ s+=x%10; x/=10; } return s; }
+
+pair<ll,ll> dfs(int pos,int rem,bool tight,bool started){
+  if(pos==L) return (started&&rem==0)?make_pair(1LL,0LL):make_pair(0LL,0LL);
+  if(!tight&&vis[pos][rem][started])
+    return make_pair(mCnt[pos][rem][started],mSum[pos][rem][started]);
+  int lim=tight?S[pos]-'0':9;
+  ll cnt=0,sum=0;
+  for(int d=0;d<=lim;d++){
+    auto [c,s]=dfs(pos+1,(rem*10+d)%K,tight&&d==lim,started||d);
+    cnt+=c; sum+=s+1LL*d*c; // moi so trong nhanh con duoc them chu so d
+  }
+  if(!tight){vis[pos][rem][started]=1;
+    mCnt[pos][rem][started]=cnt; mSum[pos][rem][started]=sum;}
+  return make_pair(cnt,sum);
+}
+ll solve(ll n,ll k){
+  if(k<=LIM){
+    S=to_string(n); K=(int)k; L=S.size();
+    memset(vis,0,sizeof vis);
+    return dfs(0,0,true,false).second;
+  }
+  ll ans=0;
+  for(ll x=k;x<=n;x+=k) ans+=sumDigit(x);
+  return ans;
+}
+// main: while(cin>>n>>k) cout<<solve(n,k)<<"\n";
+// DP: O(chuso * k * 10); duyet boi so: O(n/k * so chu so)
+\end{lstlisting}
+
+\subsection{Biến thể: trạng thái mang mặt nạ chữ số đã dùng}
+Ví dụ đếm số $\le n$ mà các chữ số đôi một khác nhau --- thêm \texttt{mask} 10 bit vào trạng thái:
+\begin{lstlisting}
+string S; ll memoM[13][1024][2]; bool visM[13][1024][2];
+ll dfsM(int pos,bool tight,bool started,int mask){
+  if(pos==(int)S.size()) return started?1:0;
+  if(!tight&&visM[pos][mask][started]) return memoM[pos][mask][started];
+  int lim=tight?S[pos]-'0':9; ll res=0;
+  for(int d=0;d<=lim;d++){
+    if(started&&(mask>>d&1)) continue;      // chu so da xuat hien
+    int nmask=(d==0&&!started)?0:(mask|(1<<d));
+    res+=dfsM(pos+1,tight&&d==lim,started||d,nmask);
+  }
+  if(!tight){visM[pos][mask][started]=1; memoM[pos][mask][started]=res;}
+  return res;
+}
+// Hoi so luong: tra ve dem (khong phai tong); hoi doan [L,R]: F(R)-F(L-1)
 \end{lstlisting}
 
 % =====================================================
@@ -592,7 +712,7 @@ ll meetCount(vector<ll>& a,ll S){
 
 % =====================================================
 \section{Luồng cực đại}
-\subsection{Dinic $O(E\sqrt V V?)$ đủ cho $10^4$ đỉnh}
+\subsection{Dinic ($O(V^2E)$, chạy nhanh thực tế)}
 Mẫu cài đặt chuẩn: BFS level + DFS blocking flow + current arc.
 \begin{lstlisting}
 struct Dinic{
@@ -758,6 +878,559 @@ ll exgcd(ll a,ll b,ll &x,ll &y){
   if(b==0){x=1;y=0;return a;}
   ll x1,y1; ll g=exgcd(b,a%b,x1,y1); x=y1; y=x1-y1*(a/b); return g;
 }
+\end{lstlisting}
+
+% =====================================================
+\section{Đồ thị bổ sung: cầu--khớp, SCC, Euler}
+Ba dạng chuẩn ICPC mà bản đầu chưa có: cầu/khớp $O(n+m)$, thành phần liên thông mạnh, đường đi Euler.
+
+\subsection{Cầu (bridge) và khớp (articulation point)}
+DFS một lần: \texttt{num[u]} = thứ tự thăm, \texttt{low[u]} = num nhỏ nhất vươn tới được từ cây con $u$. Cạnh $(u,v)$ trên cây DFS là cầu khi \texttt{low[v] > num[u]}; $u$ khác gốc là khớp khi \texttt{low[v] >= num[u]}. Gốc là khớp khi có $\ge 2$ con.
+\begin{lstlisting}
+int timer; vector<int> num,low,isCut;
+vector<vector<int>> g; vector<pair<int,int>> bridges;
+void dfs_cut(int u,int par){
+  num[u]=low[u]=++timer; int child=0;
+  for(int v:g[u]){
+    if(v==par) continue;
+    if(num[v]) low[u]=min(low[u],num[v]);
+    else{
+      dfs_cut(v,u); child++;
+      low[u]=min(low[u],low[v]);
+      if(low[v]>num[u]) bridges.pb({u,v});
+      if(par!=-1&&low[v]>=num[u]) isCut[u]=1;
+    }
+  }
+  if(par==-1&&child>1) isCut[u]=1;
+}
+// timer=0; num/low/isCut gan (n+1,0); for i=1..n: if(!num[i]) dfs_cut(i,-1);
+// Canh song song: thay v==par bang so hieu canh (khong bo qua theo dinh)
+\end{lstlisting}
+
+\subsection{SCC -- Kosaraju (2 lần DFS)}
+Lần 1 lấy thứ tự kết thúc của DFS; lần 2 DFS trên đồ thị ngược theo thứ tự đảo. Sau khi có \texttt{comp[u]} (0..c-1), nén thành DAG rồi DP (Coin Collector).
+\begin{lstlisting}
+vector<vector<int>> g,rg; vector<int> vis,comp,order;
+void dfs1(int u){ vis[u]=1;
+  for(int v:g[u]) if(!vis[v]) dfs1(v);
+  order.pb(u);
+}
+void dfs2(int u,int c){ comp[u]=c;
+  for(int v:rg[u]) if(comp[v]==-1) dfs2(v,c);
+}
+int scc(int n){
+  vis.assign(n+1,0); comp.assign(n+1,-1); order.clear();
+  for(int i=1;i<=n;i++) if(!vis[i]) dfs1(i);
+  reverse(order.begin(),order.end());
+  int c=0;
+  for(int u:order) if(comp[u]==-1) dfs2(u,c++);
+  return c;
+}
+// Nen DAG: voi moi canh u->v ma comp[u]!=comp[v]: add canh comp[u]->comp[v]
+\end{lstlisting}
+
+\subsection{Đường đi/chu trình Euler (Hierholzer)}
+Điều kiện: liên thông (bỏ đỉnh cô lập) và số đỉnh bậc lẻ bằng 0 (chu trình) hoặc đúng 2 (đường đi, xuất phát từ đỉnh bậc lẻ). Đồ thị có hướng dùng bán bậc ra--vào. Dùng số hiệu cạnh để xử lý cạnh song song/tự khuyên.
+\begin{lstlisting}
+struct E{int to,id;};
+vector<vector<E>> g; vector<int> usedE,path; // path = thu tu canh di qua
+void dfs_euler(int u){
+  for(auto [v,id]:g[u]) if(!usedE[id]){
+    usedE[id]=1; dfs_euler(v); path.pb(id);
+  }
+}
+// goi tu dinh bac le (neu co); reverse(path) de in dung thu tu
+\end{lstlisting}
+
+% =====================================================
+\section{Đường đi ngắn bổ sung: Floyd -- Bellman--Ford}
+\subsection{Floyd: mọi cặp đỉnh $O(n^3)$, $n\le 400$}
+\begin{lstlisting}
+// d[i][j]=INF64 neu khong co canh, d[i][i]=0
+for(int k=1;k<=n;k++) for(int i=1;i<=n;i++) for(int j=1;j<=n;j++)
+  if(d[i][k]<INF64&&d[k][j]<INF64) d[i][j]=min(d[i][j],d[i][k]+d[k][j]);
+\end{lstlisting}
+
+\subsection{Bellman--Ford: chu trình âm (High Score, Cycle Finding)}
+\begin{lstlisting}
+vector<ll> d(n+1,INF64); d[s]=0;
+for(int it=1;it<n;it++)
+  for(auto [u,v,w]:edges) if(d[u]<INF64) d[v]=min(d[v],d[u]+w);
+vector<int> bad(n+1,0);
+for(int it=0;it<n;it++)
+  for(auto [u,v,w]:edges)
+    if(d[u]<INF64&&d[v]>d[u]+w){ d[v]=d[u]+w; bad[v]=1; }
+for(int it=0;it<n;it++)
+  for(auto [u,v,w]:edges) if(bad[u]) bad[v]=1; // lan truyen
+// bad[x]=1: duong tu s toi x cham chu trinh am (High Score: bad[n] -> in -1)
+\end{lstlisting}
+
+% =====================================================
+\section{Cây bổ sung: tree DP, rerooting, truy vấn}
+\subsection{Tree DP: khớp cặp lớn nhất trên cây (Tree Matching 1130)}
+dp0[u] = không ghép cạnh nào từ $u$ xuống con; dp1[u] = được phép ghép tối đa 1 con (luôn có \texttt{dp1 >= dp0}).
+\begin{lstlisting}
+ll dp0[N],dp1[N];
+void dfs(int u,int p){
+  dp0[u]=0; ll add=0;
+  for(int v:g[u]) if(v!=p){
+    dfs(v,u);
+    dp0[u]+=dp1[v];
+    add=max(add,1ll+dp0[v]-dp1[v]);
+  }
+  dp1[u]=dp0[u]+add;
+}
+// dap an: dp1[1]
+\end{lstlisting}
+
+\subsection{Rerooting: Tree Distances II (1133)}
+\begin{lstlisting}
+// sz[u] = so dinh cay con; down[u] = tong khoang cach trong cay con tai u
+int sz[N]; ll down[N],ans[N];
+void dfs1(int u,int p){
+  sz[u]=1; down[u]=0;
+  for(int v:g[u]) if(v!=p){
+    dfs1(v,u); sz[u]+=sz[v]; down[u]+=down[v]+sz[v];
+  }
+}
+void dfs2(int u,int p){
+  for(int v:g[u]) if(v!=p){ ans[v]=ans[u]+n-2*sz[v]; dfs2(v,u); }
+}
+// goi dfs1(1,0); ans[1]=down[1]; dfs2(1,0);
+\end{lstlisting}
+
+\subsection{Truy vấn cây con: Euler tour + BIT (Subtree Queries 1137)}
+\begin{lstlisting}
+int tin[N],tout[N],timer=0;
+void dfs_euler(int u,int p){
+  tin[u]=++timer;
+  for(int v:g[u]) if(v!=p) dfs_euler(v,u);
+  tout[u]=timer;
+}
+// cong them v: bit.add(tin[u],v); tong cay con u: bit.rangeSum(tin[u],tout[u])
+\end{lstlisting}
+
+\subsection{Khoảng cách, tổ tiên bậc k, diff đường đi}
+Dùng chung \texttt{up[u][k]}, \texttt{dep[]} với mục LCA ở trên. Binary lifting còn dùng cho đồ thị chức năng (mỗi đỉnh đúng 1 cạnh ra, Planets Queries).
+\begin{lstlisting}
+// dep dem canh; neu canh co trong so: pre[u] = tong trong so tu goc
+int dist(int u,int v){ return dep[u]+dep[v]-2*dep[lca(u,v)]; }
+int kth(int u,int k){ // to tien thu k (0 = chinh u)
+  for(int b=0;b<LOG;b++) if(k>>b&1) u=up[u][b];
+  return u;
+}
+// Diff tren cay (Counting Paths 1136) - cong don len (val[u] += val[con]):
+//  dem theo CANH: val[u]++, val[v]++, val[lca(u,v)] -= 2;
+//  dem theo DINH: val[u]++, val[v]++, val[lca]--, val[parent(lca)]--;
+\end{lstlisting}
+
+% =====================================================
+\section{Sparse table, nén tọa độ \& BIT theo giá trị}
+\subsection{Sparse table: RMQ $O(1)$, xây $O(n\log n)$}
+\begin{lstlisting}
+struct SparseTable{
+  int n; vector<int> lg; vector<vector<int>> st;
+  SparseTable(vector<int>& a){
+    n=a.size(); lg.assign(n+1,0);
+    for(int i=2;i<=n;i++) lg[i]=lg[i/2]+1;
+    st.assign(lg[n]+1,vector<int>(n)); st[0]=a;
+    for(int k=1;k<(int)st.size();k++)
+      for(int i=0;i+(1<<k)<=n;i++)
+        st[k][i]=min(st[k-1][i],st[k-1][i+(1<<(k-1))]);
+  }
+  int rmq(int l,int r){ // [l,r]
+    int k=lg[r-l+1];
+    return min(st[k][l],st[k][r-(1<<k)+1]);
+  }
+};
+// max: doi min thanh max
+\end{lstlisting}
+
+\subsection{Nén tọa độ}
+\begin{lstlisting}
+vector<int> val=a; // copy tat ca gia tri can nen
+sort(val.begin(),val.end());
+val.erase(unique(val.begin(),val.end()),val.end());
+int id(int x){ return lower_bound(val.begin(),val.end(),x)-val.begin(); }
+\end{lstlisting}
+
+\subsection{BIT max cho DP trên giá trị nén (Increasing Subsequence II, Projects)}
+\begin{lstlisting}
+// dp[i] = 1 + max dp[j] voi a[j] < a[i]. BIT chi can prefix max
+struct BITMax{
+  int n; vector<ll> bit;
+  BITMax(int n=0):n(n),bit(n+1,0){}
+  void upd(int i,ll v){ for(i++;i<=n;i+=i&-i) bit[i]=max(bit[i],v); }
+  ll query(int i){ // max [0..i]
+    ll r=0;
+    for(i++;i>0;i-=i&-i) r=max(r,bit[i]);
+    return r;
+  }
+};
+// Projects: sort theo ngay ket thuc, nen ngay, dp = max(dp cu, query(id-1) + tien)
+\end{lstlisting}
+
+\subsection{BIT đếm theo giá trị (Salary Queries 1144)}
+Nén cả giá trị lương xuất hiện trong truy vấn trước khi xử lý offline. Cập nhật: trừ ở giá trị cũ, cộng ở giá trị mới.
+\begin{lstlisting}
+// dem.add(id(cu),-1); dem.add(id(moi),1);
+// so nguoi luong trong [a,b]: l=lower_bound(val,a), r=upper_bound(val,b)-1
+// (doi ra chi so nen) roi dem.rangeSum(l,r)
+\end{lstlisting}
+
+% =====================================================
+\section{Xác suất \& kỳ vọng cơ bản}
+Ba mẫu hay gặp: (1) số bước trung bình thỏa $E[u]=1+\sum p(u\to v)E[v]$ --- đồ thị DAG thì tính ngược topo, có chu trình thì giải hệ; (2) xác suất lập mảng theo trạng thái rồi chuyển bước; (3) tuyến tính kỳ vọng $E[X+Y]=E[X]+E[Y]$ --- tách bài toán lớn thành từng phần tử nhỏ, đếm xác suất rồi cộng lại.
+\begin{lstlisting}
+// Throwing Dice: dp[s] = xac suat dat tong s
+dp[0]=1;
+for(int s=1;s<=n;s++)
+  for(int k=1;k<=6;k++) if(s>=k) dp[s]+=dp[s-k]/6.0;
+// Moving Robots: dp[o] = xac suat dang dung o o; lap tung buoc:
+for(int step=0;step<k;step++){
+  vector<double> nxt(n,0);
+  for(int o=0;o<n;o++) for(int to:g[o]) nxt[to]+=dp[o]/g[o].size();
+  swap(dp,nxt);
+}
+\end{lstlisting}
+
+% =====================================================
+\section{Game đối kháng: Grundy (mex)}
+Game gồm nhiều "đống" độc lập: g của hợp = XOR các g. Người đi trước thắng khi tổng XOR khác 0. $g[trạng thái]=\text{mex}\{\,g[\text{trạng thái sau một nước đi hợp lệ}]\,\}$. Ví dụ: đống $i$ viên, được bốc $mv\in moves$ viên.
+\begin{lstlisting}
+vector<int> g(K+1,0);
+for(int i=1;i<=K;i++){
+  vector<int> seen(64,0); // 64 > so nuoc di
+  for(int mv:moves) if(i>=mv) seen[g[i-mv]]=1;
+  int mex=0; while(seen[mex]) mex++;
+  g[i]=mex;
+}
+// Nhieu dong: ans = g[a1]^g[a2]^... (khac 0: nguoi di truoc thang)
+\end{lstlisting}
+
+% =====================================================
+\section{Hình học 2D cơ bản}
+Tọa độ nguyên thì dùng \texttt{ll} với cross/dot, tránh chia và tránh double. Quy ước: \texttt{cross(b-a,c-a) > 0} khi $c$ nằm bên trái hướng $a\to b$ (ngược chiều kim đồng hồ).
+\begin{lstlisting}
+struct P{ ll x,y; };
+P operator+(P a,P b){ return {a.x+b.x,a.y+b.y}; }
+P operator-(P a,P b){ return {a.x-b.x,a.y-b.y}; }
+ll dot(P a,P b){ return a.x*b.x+a.y*b.y; }
+ll cross(P a,P b){ return a.x*b.y-a.y*b.x; }
+ll sgn(ll v){ return (v>0)-(v<0); }
+// Dien tich tam giac (i,j,k) = abs(cross(j-i,k-i)); da giac = |tong cross 2 dinh lien tiep|/2
+\end{lstlisting}
+
+\subsection{Giao hai đoạn thẳng (kể cả chạm đầu mút)}
+\begin{lstlisting}
+bool onSeg(P a,P b,P p){ // p tren ab (chi dung khi a,b,p thang hang)
+  return min(a.x,b.x)<=p.x&&p.x<=max(a.x,b.x)
+      && min(a.y,b.y)<=p.y&&p.y<=max(a.y,b.y);
+}
+bool segInter(P a,P b,P c,P d){
+  ll o1=cross(b-a,c-a),o2=cross(b-a,d-a);
+  ll o3=cross(d-c,a-c),o4=cross(d-c,b-c);
+  if(sgn(o1)*sgn(o2)<0&&sgn(o3)*sgn(o4)<0) return true;
+  if(o1==0&&onSeg(a,b,c)) return true;
+  if(o2==0&&onSeg(a,b,d)) return true;
+  if(o3==0&&onSeg(c,d,a)) return true;
+  if(o4==0&&onSeg(c,d,b)) return true;
+  return false;
+}
+\end{lstlisting}
+
+\subsection{Diện tích đa giác \& điểm trong đa giác}
+\begin{lstlisting}
+// area2 = 2 x dien tich; dinh theo thu tu (thuan hoac nguoc)
+ll area2(vector<P>& p){
+  ll s=0; int n=p.size();
+  for(int i=0;i<n;i++) s+=cross(p[i],p[(i+1)%n]);
+  return abs(s);
+}
+// Diem trong da giac don (ray casting, so nguyen)
+bool inPoly(vector<P>& p,P q){
+  int n=p.size(); bool in=false;
+  for(int i=0,j=n-1;i<n;j=i++){
+    P a=p[i],b=p[j];
+    if((a.y>q.y)!=(b.y>q.y)){
+      ll lhs=(q.x-a.x)*(b.y-a.y), rhs=(q.y-a.y)*(b.x-a.x);
+      if((b.y>a.y)?(lhs<rhs):(lhs>rhs)) in=!in;
+    }
+  }
+  return in;
+}
+// Muon tinh ca bien: kiem tra onSeg voi tung canh truoc, dung lai
+\end{lstlisting}
+
+\subsection{Bao lồi -- monotone chain}
+\begin{lstlisting}
+vector<P> hull(vector<P> p){
+  sort(p.begin(),p.end(),[](P a,P b){
+    return a.x<b.x||(a.x==b.x&&a.y<b.y); });
+  p.erase(unique(p.begin(),p.end(),[](P a,P b){
+    return a.x==b.x&&a.y==b.y; }),p.end());
+  if(p.size()<=2) return p;
+  int n=p.size(),k=0; vector<P> h(2*n);
+  for(int i=0;i<n;i++){
+    while(k>=2&&cross(h[k-1]-h[k-2],p[i]-h[k-1])<=0) k--;
+    h[k++]=p[i];
+  }
+  for(int i=n-2,t=k+1;i>=0;i--){
+    while(k>=t&&cross(h[k-1]-h[k-2],p[i]-h[k-1])<=0) k--;
+    h[k++]=p[i];
+  }
+  h.resize(k-1);
+  return h;
+}
+// "<=0": bo diem thang hang tren bien; doi "<0" neu muon giu lai
+\end{lstlisting}
+
+% =====================================================
+\section{Tiện ích bổ sung}
+\subsection{Prefix 3D (dạng đã gặp ở ICPC2025MB)}
+\begin{lstlisting}
+// pre[i][j][k] = tong khoi [1..i][1..j][1..k]
+for i 1..n: for j 1..m: for k 1..p:
+  pre[i][j][k]=a[i][j][k]+pre[i-1][j][k]+pre[i][j-1][k]+pre[i][j][k-1]
+    -pre[i-1][j-1][k]-pre[i-1][j][k-1]-pre[i][j-1][k-1]+pre[i-1][j-1][k-1];
+// Tong khoi [x1..x2][y1..y2][z1..z2]: quy tac chan le, 8 so hang:
+// +F(x2,y2,z2) -F(x1-1,y2,z2) -F(x2,y1-1,z2) -F(x2,y2,z1-1)
+// +F(x1-1,y1-1,z2) +F(x1-1,y2,z1-1) +F(x2,y1-1,z1-1) -F(x1-1,y1-1,z1-1)
+\end{lstlisting}
+
+\subsection{Bitset: subset sum nhanh gấp 64 lần}
+\begin{lstlisting}
+bitset<100001> dp; dp[0]=1;
+for(int x:a) dp|=dp<<x;   // dp[s]=1 neu co tap con tong s
+cout<<dp.count();         // dem so tong tao duoc
+// Reachability do thi n<=2000: reach[u] la bitset cac dinh toi duoc tu u,
+// xu ly nguoc topo: reach[u] |= reach[v] voi moi canh u->v
+\end{lstlisting}
+
+\subsection{Chuỗi: chu kỳ \& LCP bằng hash}
+\begin{lstlisting}
+// Chu ky nho nhat: p = n - pi[n-1] (pi = prefixFunc); la chu ky "dep" khi n%p==0
+// LCP hai xau con (dung HashStr o tren): chat nhi phan do dai
+int lcp(HashStr& h,int i,int j,int mx){
+  int lo=0,hi=mx;
+  while(lo<hi){ int mid=(lo+hi+1)/2;
+    if(h.get(i,i+mid-1)==h.get(j,j+mid-1)) lo=mid;
+    else hi=mid-1; }
+  return lo;
+}
+\end{lstlisting}
+
+\subsection{ordered\_set (PBDS)}
+\begin{lstlisting}
+#include <ext/pb_ds/assoc_container.hpp>
+using namespace __gnu_pbds;
+typedef tree<int,null_type,less<int>,rb_tree_tag,
+  tree_order_statistics_node_update> ordered_set;
+// s.order_of_key(x): so phan tu < x
+// *(s.find_by_order(k)): phan tu thu k (0-index)
+// Muon luu trung nhau: dung pair<val,id>. Chi co tren g++ (CF, domjudge).
+\end{lstlisting}
+
+% =====================================================
+\section{DP bổ sung: interval, knapsack, bitmask, tối ưu}
+Các dạng xếp từ sát trình hiện tại trở lên; dạng khó nhất là broken profile (cuối chương), học qua CSES 2181.
+
+\subsection{Interval DP: dp[l][r]}
+Trạng thái là một khoảng; chuyển bằng cách chọn điểm cắt hoặc rút hai đầu. Hai mẫu hay gặp:
+
+Removal Game (1097) --- hai người rút đầu/cuối, ai cũng tối ưu. Chỉ cần 2 lớp theo độ dài: $O(n^2)$ thời gian, $O(n)$ bộ nhớ.
+\begin{lstlisting}
+// dp[l][r] = diem nguoi di truoc an duoc tu doan [l,r]
+// dp[l][r] = max(a[l] + sum(l+1,r) - dp[l+1][r],
+//                a[r] + sum(l,r-1) - dp[l][r-1])
+vector<ll> pre(n+1,0),prev(n),cur(n);
+for(int i=0;i<n;i++) pre[i+1]=pre[i]+a[i];
+for(int len=1;len<=n;len++){
+  for(int l=0;l+len<=n;l++){
+    int r=l+len-1;
+    if(l==r){ cur[l]=a[l]; continue; }
+    cur[l]=max(a[l]+pre[r+1]-pre[l+1]-prev[l+1],
+               a[r]+pre[r]-pre[l]-prev[l]);
+  }
+  swap(prev,cur); // lop do dai len-1 -> len
+}
+// dap an: prev[0]
+\end{lstlisting}
+
+Gộp đoạn: $dp[l][r]=\min_k(dp[l][k]+dp[k+1][r])+\text{cost}(l,r)$ (nối đá, nối xâu, nhân ma trận):
+\begin{lstlisting}
+for(int len=2;len<=n;len++)
+  for(int l=0;l+len<=n;l++){
+    int r=l+len-1; dp[l][r]=INF64;
+    for(int k=l;k<r;k++)
+      dp[l][r]=min(dp[l][r],dp[l][k]+dp[k+1][r]);
+    dp[l][r]+=pre[r+1]-pre[l]; // vi du: cost = tong doan
+  }
+// Xau doi xung: LPS = LCS(s, nguoc(s)); palindrome chan/le = Manacher (muc truoc)
+\end{lstlisting}
+
+\subsection{Tối ưu bằng prefix sum: $O(n^2)\to O(n)$}
+\begin{lstlisting}
+// dp[i] = tong dp[j] voi j trong [i-k, i-1] -> prefix sum cua dp
+// Vi du Dice: dem day dai n, moi buoc cong 1..k
+vector<ll> dp(n+1),pre(n+2);
+dp[0]=1; pre[1]=1;
+for(int i=1;i<=n;i++){
+  dp[i]=(pre[i]-pre[max(0,i-k)]+MOD)%MOD;
+  pre[i+1]=(pre[i]+dp[i])%MOD;
+}
+// dp[i] phu thuoc doan [i-k..i-1] -> prefix sum; neu la min/max -> deque (muc duoi)
+\end{lstlisting}
+
+\subsection{Knapsack: các biến thể}
+\begin{lstlisting}
+// 0/1: moi do vat 1 lan -> duyet w NGUOC
+for(auto [w,v]:items) for(int j=W;j>=w;j--) dp[j]=max(dp[j],dp[j-w]+v);
+// Vo han: duyet w XUOI (dung lai do vat nhieu lan)
+for(auto [w,v]:items) for(int j=w;j<=W;j++) dp[j]=max(dp[j],dp[j-w]+v);
+// Bounded (moi do vat co c ban): chia nhi phan 1,2,4,... thanh do vat 0/1
+int c=count[i];
+for(int x=1;c>0;x*=2){ int t=min(x,c); items.pb({t*w,t*v}); c-=t; }
+// W qua lon nhung tong gia tri V nho: doi chieu dp[j]=trong luong min dat gia tri j
+// Dem cach (Coin Combinations): do vat vong ngoai -> khong trung, khong phan biet thu tu
+\end{lstlisting}
+
+\subsection{LIS $O(n\log n)$ và biến thể}
+\begin{lstlisting}
+// tang chat: lower_bound; KHONG giam: doi thanh upper_bound
+vector<int> tails;
+for(int x:a){
+  auto it=lower_bound(tails.begin(),tails.end(),x);
+  if(it==tails.end()) tails.pb(x); else *it=x;
+}
+// do dai = tails.size() (tails khong phai day con thuc)
+// Truy vet / dem / cap nhat diem 1 vi tri: BIT max (muc "BIT theo gia tri" o tren)
+\end{lstlisting}
+
+\subsection{DP chuỗi: wildcard ký tự \texttt{* ?}}
+\begin{lstlisting}
+// dp[i][j] = a[0..i) khop b[0..j) hay khong
+dp[0][0]=1;
+for(int j=1;j<=m;j++) if(b[j-1]=='*') dp[0][j]=dp[0][j-1];
+for(int i=1;i<=n;i++) for(int j=1;j<=m;j++){
+  if(b[j-1]=='*') dp[i][j]=dp[i-1][j]||dp[i][j-1]; // '*' an 0 hoac nhieu ky tu
+  else dp[i][j]=dp[i-1][j-1]&&(a[i-1]==b[j-1]||b[j-1]=='?');
+}
+// dap an: dp[n][m] (a = xau nguon, b = mau)
+\end{lstlisting}
+
+\subsection{Bitmask bổ sung}
+Duyệt mọi tập con của \texttt{mask} (tổng $O(3^n)$ cho toàn bộ mask):
+\begin{lstlisting}
+for(int mask=1;mask<(1<<n);mask++)
+  for(int sub=mask;sub;sub=(sub-1)&mask)
+    // sub chay qua cac tap con khac rong cua mask
+    // vi du: dp[mask] = min(dp[mask^sub] + cost(sub))
+\end{lstlisting}
+
+Elevator Rides (1653): $n\le 20$, thang máy tải trọng $X$. Trạng thái là cặp (số chuyến, tải chuyến cuối) --- ưu tiên ít chuyến, rồi tải nhỏ:
+\begin{lstlisting}
+pair<int,ll> dp[1<<20]; // {so chuyen, tai chuyen cuoi}
+dp[0]={1,0};
+for(int mask=1;mask<(1<<n);mask++){
+  dp[mask]={INT_MAX,0};
+  for(int i=0;i<n;i++) if(mask>>i&1){
+    auto pr=dp[mask^(1<<i)]; pair<int,ll> c;
+    if(pr.second+w[i]<=X) c={pr.first,pr.second+w[i]};
+    else c={pr.first+1,w[i]};
+    if(c.first<dp[mask].first||(c.first==dp[mask].first&&c.second<dp[mask].second))
+      dp[mask]=c;
+  }
+}
+// dap an: dp[(1<<n)-1].first
+// Dem duong di Hamilton (1690): dp[mask][last] dem so cach, chuyen y het TSP
+\end{lstlisting}
+
+\subsection{DP cửa sổ trượt bằng deque}
+Khi $dp[i]$ cần min/max của $dp[j]$ với $j$ trong cửa sổ trượt, dùng deque giữ chỉ số theo thứ tự giá trị. Ví dụ Maximum Subarray Sum II (1644): tổng đoạn độ dài trong $[a,b]$ lớn nhất.
+\begin{lstlisting}
+// ans = max(pre[i] - min(pre[j])), j trong [i-b, i-a]
+deque<int> dq; ll ans=-INF64;
+for(int i=a;i<=n;i++){
+  while(!dq.empty()&&dq.front()<i-b) dq.pop_front();
+  int j=i-a; // ung vien moi
+  while(!dq.empty()&&pre[dq.back()]>=pre[j]) dq.pop_back();
+  dq.pb(j);
+  ans=max(ans,pre[i]-pre[dq.front()]);
+}
+\end{lstlisting}
+
+\subsection{Max subarray 2D --- Kadane nâng cấp $O(n^3)$}
+\begin{lstlisting}
+// Tong hinh chu nhat con lon nhat trong luoi n x m
+ll ans=-INF64;
+for(int top=0;top<n;top++){
+  vector<ll> col(m,0);
+  for(int bot=top;bot<n;bot++){
+    for(int j=0;j<m;j++) col[j]+=a[bot][j];
+    ll cur=-INF64,best=-INF64; // Kadane tren col
+    for(int j=0;j<m;j++){
+      cur=max(col[j],cur+col[j]); best=max(best,cur);
+    }
+    ans=max(ans,best);
+  }
+}
+\end{lstlisting}
+
+\subsection{Tree DP nhỏ: đường kính qua mỗi đỉnh}
+\begin{lstlisting}
+// h[u] = do sau lon nhat trong cay con; duong kinh = max(d1+d2) qua moi dinh
+int h[N]; ll best=0;
+void dfs(int u,int p){
+  h[u]=0; int d1=0,d2=0;
+  for(int v:g[u]) if(v!=p){
+    dfs(v,u);
+    if(h[v]+1>d1){ d2=d1; d1=h[v]+1; }
+    else if(h[v]+1>d2) d2=h[v]+1;
+  }
+  h[u]=d1; best=max(best,(ll)d1+d2);
+}
+\end{lstlisting}
+
+\subsection{Đếm đường đi tránh vật cản (tổ hợp + đệ quy)}
+Đi từ $(0,0)$ đến $(N,M)$ chỉ sang/phải, tránh $K$ ô cấm. Sort ô cấm, coi đích là ô cấm thứ $K$; $dp[i]$ = số đường tới ô $i$ mà không dính ô cấm nào trước đó.
+\begin{lstlisting}
+sort(obs.begin(),obs.end()); obs.pb({N,M});
+vector<ll> dp(K+1);
+for(int i=0;i<=K;i++){
+  auto [x,y]=obs[i];
+  dp[i]=Cnk(x+y,x);
+  for(int j=0;j<i;j++){
+    auto [a,b]=obs[j];
+    if(a<=x&&b<=y) dp[i]=(dp[i]-dp[j]*Cnk(x-a+y-b,x-a))%MOD;
+  }
+  dp[i]=(dp[i]+MOD)%MOD;
+}
+// dap an: dp[K] (can nCr toi N+M, xem phu luc so hoc)
+\end{lstlisting}
+
+\subsection{Broken profile DP: lấp domino $1\times2$ (Counting Tilings 2181)}
+Quét từng ô theo hàng; \texttt{mask} = $m$ ô phía trước đã bị chiếm chỗ hay chưa. Chọn $m$ là chiều nhỏ. $O(nm2^m)$.
+\begin{lstlisting}
+// Lap kin luoi n x m bang domino 1x2 (n*m chan)
+vector<ll> dp(1<<m,0),ndp(1<<m);
+dp[0]=1;
+for(int pos=0;pos<n*m;pos++){
+  fill(ndp.begin(),ndp.end(),0);
+  for(int mask=0;mask<(1<<m);mask++){
+    ll v=dp[mask]; if(!v) continue;
+    if(mask&1) ndp[mask>>1]=(ndp[mask>>1]+v)%MOD; // o da duoc lap
+    else{
+      // dat doc: chiem o duoi (bit m-1 cua mask moi)
+      ndp[(mask>>1)|(1<<(m-1))]=(ndp[(mask>>1)|(1<<(m-1))]+v)%MOD;
+      // dat ngang: chiem o ben phai (bit 0 cua mask moi)
+      if(pos%m!=m-1&&!(mask&2))
+        ndp[(mask>>1)|1]=(ndp[(mask>>1)|1]+v)%MOD;
+    }
+  }
+  swap(dp,ndp);
+}
+// dap an: dp[0]
 \end{lstlisting}
 
 \end{multicols}
